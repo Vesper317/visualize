@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+<title>数绘校园 - Python 数据可视化校本课程</title>
+<link rel="stylesheet" href="style.css">
+<style>
+/* 登录遮罩 + 弹窗 */
+.login-mask {
+  position: fixed; top:0; left:0; width:100%; height:100%;
+  background:rgba(0,0,0,0.6); z-index:9998;
+  display: flex; align-items:center; justify-content:center;
+}
+.login-box {
+  background:#fff; border-radius:12px; width:100%; max-width:420px;
+  padding:30px; box-shadow:0 10px 30px rgba(0,0,0,0.2);
+}
+.login-box h2 {
+  margin:0 0 20px; text-align:center; color:#2d8557;
+}
+.login-input {
+  width:100%; padding:12px 15px; margin:10px 0;
+  border:1px solid #ddd; border-radius:6px; font-size:1rem;
+  box-sizing:border-box;
+}
+.login-btn {
+  width:100%; padding:12px; background:#2d8557; color:#fff;
+  border:none; border-radius:6px; font-size:1rem; cursor:pointer;
+  margin-top:10px;
+}
+.login-btn:hover {
+  background:#1e6f3f;
+}
+.login-tips {
+  color:#f44336; text-align:center; margin-top:10px; font-size:0.9rem;
+  display:none;
+}
+.switch-text {
+  text-align:center; margin-top:15px; font-size:0.9rem;
+  color:#666; cursor:pointer;
+}
+.switch-text span {
+  color:#2d8557; font-weight:bold;
+}
+/* 右上角用户信息 */
+.user-info {
+  display: flex; align-items:center; gap:10px; color:#fff; margin-left:15px;
+}
+.user-info span {
+  font-weight:bold;
+}
+.logout-btn {
+  background:#fff; color:#2d8557; border:none; padding:4px 10px;
+  border-radius:4px; cursor:pointer; font-size:0.85rem;
+}
+/* PDF 笔记区域 */
+.pdf-note-area {
+  background: #fff;
+  border-radius: 12px;
+  padding: 15px;
+  margin-top: 15px;
+  border: 1px solid #eef2f7;
+}
+body.dark-mode .pdf-note-area {
+  background: #2d2d44;
+  border-color: #3d3d5c;
+}
+.pdf-note-area textarea {
+  width: 100%;
+  height: 100px;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #ddd;
+  resize: vertical;
+}
+/* 知识图谱树形结构 */
+.tree-node {
+  margin-left: 0;
+  list-style: none;
+}
+.tree-node li {
+  list-style: none;
+  margin-left: 20px;
+  position: relative;
+}
+.tree-node .folder, .tree-node .file {
+  cursor: pointer;
+  padding: 8px 12px;
+  margin: 4px 0;
+  border-radius: 8px;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.tree-node .folder:hover, .tree-node .file:hover {
+  background: #e8f0fe;
+}
+body.dark-mode .tree-node .folder:hover,
+body.dark-mode .tree-node .file:hover {
+  background: #2a2a4a;
+}
+.tree-node .children {
+  display: none;
+  margin-left: 20px;
+  border-left: 2px dashed #ccc;
+  padding-left: 10px;
+}
+.tree-node .children.show {
+  display: block;
+}
+.tree-node .folder {
+  font-weight: 600;
+  color: #1e6f3f;
+}
+body.dark-mode .tree-node .folder {
+  color: #6abf8f;
+}
+/* 作业分节样式 */
+.homework-section {
+  margin-bottom: 30px;
+  border: 1px solid #eef2f7;
+  border-radius: 12px;
+  overflow: hidden;
+}
+.homework-section-header {
+  background: #f0f7f0;
+  padding: 12px 20px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.1rem;
+  color: #1e6f3f;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+body.dark-mode .homework-section-header {
+  background: #1a2a1a;
+}
+.homework-section-header:hover {
+  background: #e0f0e0;
+}
+.homework-section-header .toggle-icon {
+  font-size: 1.2rem;
+  transition: transform 0.3s;
+}
+.homework-section-header.collapsed .toggle-icon {
+  transform: rotate(-90deg);
+}
+.homework-section-content {
+  padding: 15px;
+  display: block;
+}
+.homework-section-content.collapsed {
+  display: none;
+}
+.homework-item {
+  background: white;
+  border-radius: 12px;
+  padding: 15px;
+  margin-bottom: 15px;
+  border: 1px solid #eef2f7;
+}
+body.dark-mode .homework-item {
+  background: #2d2d44;
+  border-color: #3d3d5c;
+}
+.homework-item-title {
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1e6f3f;
+}
+.homework-item-desc {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 12px;
+}
+body.dark-mode .homework-item-desc {
+  color: #aaa;
+}
+/* 代码预览模块 */
+.code-preview {
+  background: #1e1e1e;
+  color: #d4d4d4;
+  padding: 15px;
+  border-radius: 8px;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  overflow-x: auto;
+  margin: 10px 0;
+  display: none;
+}
+.code-preview.show {
+  display: block;
+}
+.code-note-area {
+  margin-top: 10px;
+}
+.code-note-area textarea {
+  width: 100%;
+  height: 60px;
+  padding: 8px;
+  border-radius: 6px;
+  border: 1px solid #ddd;
+}
+</style>
+</head>
+<body>
+
+<!-- 登录弹窗（默认显示） -->
+<div id="loginMask" class="login-mask">
+  <div class="login-box">
+    <div id="loginForm">
+      <h2>数绘校园 · 登录</h2>
+      <input type="text" id="loginUser" class="login-input" placeholder="请输入账号" autocomplete="off">
+      <input type="password" id="loginPwd" class="login-input" placeholder="请输入密码">
+      <button class="login-btn" onclick="doLogin()">登录</button>
+      <div class="login-tips" id="loginTips">账号或密码错误！</div>
+      <div class="switch-text">没有账号？<span onclick="showRegister()">立即注册</span></div>
+    </div>
+    <div id="registerForm" style="display:none;">
+      <h2>数绘校园 · 注册</h2>
+      <input type="text" id="regUser" class="login-input" placeholder="设置账号" autocomplete="off">
+      <input type="password" id="regPwd" class="login-input" placeholder="设置密码">
+      <input type="password" id="regPwd2" class="login-input" placeholder="确认密码">
+      <button class="login-btn" onclick="doRegister()">注册</button>
+      <div class="login-tips" id="regTips"></div>
+      <div class="switch-text">已有账号？<span onclick="showLogin()">返回登录</span></div>
+    </div>
+  </div>
+</div>
+
+<nav class="navbar">
+<div class="nav-container">
+<div class="logo">
+数绘校园 <span>Python 可视化</span>
+</div>
+<div class="hamburger" onclick="toggleMenu()">☰</div>
+<ul class="nav-menu" id="navMenu">
+<li><a href="#" data-page="home" class="active">首页</a></li>
+<li><a href="#" data-page="textbook">教材</a></li>
+<li><a href="#" data-page="chapter1">第一章：开启可视化之旅</a></li>
+<li><a href="#" data-page="chapter2">第二章：常用图表及代码实现</a></li>
+<li><a href="#" data-page="chapter3">第三章：数绘校园</a></li>
+</ul>
+<button class="theme-toggle" onclick="toggleDarkMode()">深色</button>
+<div id="userInfo" class="user-info" style="display:none;">
+  欢迎，<span id="userName"></span>
+  <button class="logout-btn" onclick="doLogout()">退出</button>
+</div>
+</div>
+</nav>
+
+<!-- AI助手对话按钮 -->
+<div class="ai-helper-btn" onclick="toggleChatPanel()">
+  <div class="ai-icon">🤖</div>
+  <span>DeepSeek 助手</span>
+</div>
+
+<!-- AI对话面板 -->
+<div id="aiChatPanel" class="ai-chat-panel">
+  <div class="ai-chat-header">
+    <div class="ai-header-left">
+      <span class="ai-icon-big">🤖</span>
+      <div>
+        <h3>DeepSeek AI 助手</h3>
+        <p>我是您的 Python 数据可视化学习伙伴</p>
+      </div>
+    </div>
+    <button class="ai-close-btn" onclick="toggleChatPanel()">×</button>
+  </div>
+  
+  <div class="ai-chat-body" id="aiChatBody">
+    <!-- AI欢迎消息 -->
+    <div class="message ai-message">
+      <div class="message-avatar">🤖</div>
+      <div class="message-content">
+        <div class="message-text">你好！我是 DeepSeek AI 助手，专门帮助您学习 Python 数据可视化。</div>
+        <div class="message-text">我可以：</div>
+        <div class="message-text">1. 解答 Matplotlib 代码问题</div>
+        <div class="message-text">2. 解释图表绘制原理</div>
+        <div class="message-text">3. 调试错误代码</div>
+        <div class="message-text">4. 提供学习建议</div>
+        <div class="message-time">刚刚</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="ai-chat-footer">
+    <div class="chat-input-wrapper">
+      <input type="text" id="aiChatInput" placeholder="输入问题，例如：如何绘制折线图？" 
+             onkeypress="if(event.key === 'Enter') sendMessage()">
+      <button onclick="sendMessage()" class="ai-send-btn">发送</button>
+    </div>
+    <div class="chat-actions">
+      <button onclick="insertExample('plt.plot() 代码怎么写？')" class="ai-action-btn">代码问题</button>
+      <button onclick="insertExample('中文乱码怎么解决？')" class="ai-action-btn">常见问题</button>
+      <button onclick="clearChat()" class="ai-action-btn">清空对话</button>
+    </div>
+  </div>
+</div>
+
+<main class="main-content" id="mainContent">
+<!-- 首页 -->
+<div id="homePage" class="page">
+<div class="hero">
+<h1>数绘校园</h1>
+<p style="font-size: 1.2rem; margin: 15px 0;">用 Python 实现数据可视化 —— 校本教材配套网站</p>
+<p>数据收集 · Python 编程 · 图表绘制 · 校园项目实践</p>
+
+<!-- 软件下载功能按钮 -->
+<div style="margin-top: 25px; margin-bottom: 10px;">
+  <a href="https://code.visualstudio.com/" target="_blank" class="btn" style="background-color: #007ACC; padding: 10px 24px; font-size: 1.05rem; border-radius: 30px; box-shadow: 0 4px 12px rgba(0, 122, 204, 0.3);">
+    💻 下载 VS Code (编程工具)
+  </a>
+</div>
+
+<div class="stats">
+<div class="stat-item"><div class="stat-number">3</div><div>大 章 节</div></div>
+<div class="stat-item"><div class="stat-number">15+</div><div>课 时 PPT</div></div>
+<div class="stat-item"><div class="stat-number">20+</div><div>代 码 示 例</div></div>
+<div class="stat-item"><div class="stat-number">5+</div><div>校 园 项 目</div></div>
+</div>
+</div>
+<h2 style="margin: 20px 0 10px;">课程章节</h2>
+<div class="chapter-cards">
+<div class="chapter-card" data-page="chapter1">
+<div class="chapter-number">1</div>
+<h3>开启可视化之旅</h3>
+<p>Python 环境搭建 · 变量与列表 · 第一张数据名片</p>
+</div>
+<div class="chapter-card" data-page="chapter2">
+<div class="chapter-number">2</div>
+<h3>常用图表及代码实现</h3>
+<p>柱状图 · 折线图 · 饼图 · 箱线图 · 热力图</p>
+</div>
+<div class="chapter-card" data-page="chapter3">
+<div class="chapter-number">3</div>
+<h3>数绘校园</h3>
+<p>作业量调查 · 心情变化 · 食堂排队 · 成绩分布</p>
+</div>
+</div>
+<div class="note-box">
+<h3>课程介绍</h3>
+<p>本课程将带领你走进数据可视化的世界，通过 Python 编程和 Matplotlib 库，将抽象的校园数据转化为直观的图表。从环境搭建到完成校园项目，你将掌握用数据讲述故事的能力。</p>
+<p style="margin-top:10px;"><strong>主编：</strong>第二小组 &nbsp;|&nbsp; <strong>编写人员：</strong>陈慕晴、黄逸姝、王艺晗、汪中凯、周婉莹</p>
+</div>
+</div>
+
+<!-- 教材页面 - PDF 直接预览 + 笔记 -->
+<div id="textbookPage" class="page" style="display:none;">
+<div class="chapter-header">
+<h1>电子教材</h1>
+<p class="chapter-desc">《数绘校园——用 Python 实现数据可视化》完整教材（在线预览）</p>
+</div>
+<div class="pdf-toolbar">
+<a href="校本教材.pdf" class="btn" download>下载教材 PDF</a>
+<a href="#" class="btn" onclick="window.open('校本教材.pdf', '_blank'); return false;">新窗口打开</a>
+</div>
+<div class="pdf-container">
+<iframe id="pdfIframe" src="校本教材.pdf" title="数绘校园教材 PDF">
+您的浏览器不支持 PDF 预览，请<a href="校本教材.pdf">下载查看</a>
+</iframe>
+</div>
+<div class="pdf-note-area">
+<strong>📝 笔记：</strong>
+<textarea id="pdfNotes" placeholder="在这里写下你的笔记..."></textarea>
+<button class="btn btn-sm" onclick="savePdfNotes()">保存笔记</button>
+<button class="btn btn-sm" onclick="loadPdfNotes()">加载笔记</button>
+</div>
+<div class="note-box">
+<strong>提示：</strong>如果 PDF 无法正常显示，请点击上方“下载教材 PDF”保存到本地后查看，或使用 Chrome/Edge 浏览器打开本页面。笔记会自动保存在浏览器中。
+</div>
+</div>
+
+<!-- 第一章页面 -->
+<div id="chapter1Page" class="page" style="display:none;">
+<div class="chapter-header">
+<h1>第一章：开启可视化之旅</h1>
+<p class="chapter-desc">—— 绘制我的第一张“数据名片”</p>
+</div>
+<div class="module-tabs">
+<button class="tab-btn active" data-tab="c1-map">知识图谱</button>
+<button class="tab-btn" data-tab="c1-ppt">PPT 课件</button>
+<button class="tab-btn" data-tab="c1-code">代码指南</button>
+<button class="tab-btn" data-tab="c1-compiler">在线编程</button> <!-- 新增在线编程标签 -->
+<button class="tab-btn" data-tab="c1-homework">作业</button>
+</div>
+
+<!-- 第一章内容 -->
+<div id="c1-map" class="module-panel active">
+<div class="knowledge-graph">
+<div class="kg-title">第一章知识图谱：开启可视化之旅</div>
+<ul class="tree-node" id="kg-tree-ch1-complete"></ul>
+<div class="note-box" style="margin-top:15px;">
+<strong>本章核心</strong>：掌握 Python 基础语法，搭建编程环境，完成第一张数据可视化作品——“数据名片”。
+</div>
+</div>
+</div>
+<div id="c1-ppt" class="module-panel"><div class="card-grid" id="ppt-list-ch1"></div></div>
+<div id="c1-code" class="module-panel"><div class="card-grid" id="code-list-ch1"></div></div>
+
+<!-- 第一章在线编程 -->
+<div id="c1-compiler" class="module-panel">
+  <div class="note-box" style="margin-bottom: 20px;">
+    <strong>💡 提示：</strong>这是内嵌的 Python 在线编程环境。你可以在左侧编写 Matplotlib 画图代码，点击上方的 <strong>运行 (Run)</strong> 按钮后，右侧会直接显示出图表！
+  </div>
+  <iframe src="https://trinket.io/embed/python3?runOption=run" 
+          width="100%" height="550" frameborder="0" marginwidth="0" marginheight="0" 
+          allowfullscreen style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+  </iframe>
+</div>
+
+<div id="c1-homework" class="module-panel">
+<div id="homework-container-ch1"></div>
+<!-- 第一章在线答题 -->
+<h3 style="margin: 40px 0 10px;">在线随堂练习（实践题和简答题请下载作业文档查看）</h3>
+<div class="quiz-card">
+  <div class="quiz-header">
+    <span id="quiz-progress-ch1">第 1 题</span>
+    <span class="quiz-badge">第一章自测</span>
+  </div>
+  <div id="quiz-body-ch1">
+    <div class="quiz-question" id="quiz-question-ch1">正在加载题目...</div>
+    <div class="quiz-options" id="quiz-options-ch1"></div>
+  </div>
+  <div class="quiz-feedback" id="quiz-feedback-ch1" style="display: none;">
+    <div class="feedback-status" id="feedback-status-ch1"></div>
+    <div class="feedback-answer">正确答案是：<strong id="correct-answer-text-ch1"></strong></div>
+    <div class="feedback-explanation" id="feedback-explanation-ch1"></div>
+  </div>
+  <div class="quiz-actions">
+    <button class="btn" id="quiz-next-btn-ch1" style="display: none;" onclick="handleNext('ch1')">下一题</button>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- 第二章页面 -->
+<div id="chapter2Page" class="page" style="display:none;">
+<div class="chapter-header">
+<h1>第二章：常用图表及代码实现</h1>
+<p class="chapter-desc">柱状图 · 折线图 · 饼图 · 箱线图 · 热力图</p>
+</div>
+<div class="module-tabs">
+<button class="tab-btn active" data-tab="c2-map">知识图谱</button>
+<button class="tab-btn" data-tab="c2-ppt">PPT 课件</button>
+<button class="tab-btn" data-tab="c2-code">代码指南</button>
+<button class="tab-btn" data-tab="c2-compiler">在线编程</button> <!-- 新增在线编程标签 -->
+<button class="tab-btn" data-tab="c2-homework">作业</button>
+</div>
+<!-- 第二章内容 -->
+<div id="c2-map" class="module-panel active">
+<div class="knowledge-graph">
+<div class="kg-title">第二章知识图谱：常用图表及代码实现</div>
+<ul class="tree-node" id="kg-tree-ch2"></ul>
+<div class="note-box" style="margin-top:15px;">
+<strong>本章核心</strong>：掌握 7 种常用图表的特点、适用场景及 Python 绘制方法。
+</div>
+</div>
+</div>
+<div id="c2-ppt" class="module-panel"><div class="card-grid" id="ppt-list-ch2"></div></div>
+<div id="c2-code" class="module-panel"><div class="card-grid" id="code-list-ch2"></div></div>
+
+<!-- 第二章在线编程 -->
+<div id="c2-compiler" class="module-panel">
+  <div class="note-box" style="margin-bottom: 20px;">
+    <strong>💡 提示：</strong>这是内嵌的 Python 在线编程环境。你可以在左侧编写 Matplotlib 画图代码，点击上方的 <strong>运行 (Run)</strong> 按钮后，右侧会直接显示出图表！
+  </div>
+  <iframe src="https://trinket.io/embed/python3?runOption=run" 
+          width="100%" height="550" frameborder="0" marginwidth="0" marginheight="0" 
+          allowfullscreen style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+  </iframe>
+</div>
+
+<div id="c2-homework" class="module-panel">
+<div id="homework-container-ch2"></div>
+<!-- 第二章在线答题 -->
+<h3 style="margin: 40px 0 10px;">在线随堂练习（实践题和简答题请下载作业文档查看）</h3>
+<div class="quiz-card">
+  <div class="quiz-header">
+    <span id="quiz-progress-ch2">第 1 题</span>
+    <span class="quiz-badge">第二章自测</span>
+  </div>
+  <div id="quiz-body-ch2">
+    <div class="quiz-question" id="quiz-question-ch2">正在加载题目...</div>
+    <div class="quiz-options" id="quiz-options-ch2"></div>
+  </div>
+  <div class="quiz-feedback" id="quiz-feedback-ch2" style="display: none;">
+    <div class="feedback-status" id="feedback-status-ch2"></div>
+    <div class="feedback-answer">正确答案是：<strong id="correct-answer-text-ch2"></strong></div>
+    <div class="feedback-explanation" id="feedback-explanation-ch2"></div>
+  </div>
+  <div class="quiz-actions">
+    <button class="btn" id="quiz-next-btn-ch2" style="display: none;" onclick="handleNext('ch2')">下一题</button>
+  </div>
+</div>
+</div>
+</div>
+
+<!-- 第三章页面 -->
+<div id="chapter3Page" class="page" style="display:none;">
+<div class="chapter-header">
+<h1>第三章：数绘校园</h1>
+<p class="chapter-desc">我们的数据故事 —— 校园项目实践</p>
+</div>
+<div class="module-tabs">
+<button class="tab-btn active" data-tab="c3-map">知识图谱</button>
+<button class="tab-btn" data-tab="c3-ppt">PPT 课件</button>
+<button class="tab-btn" data-tab="c3-code">代码指南</button>
+<button class="tab-btn" data-tab="c3-compiler">在线编程</button> <!-- 新增在线编程标签 -->
+<button class="tab-btn" data-tab="c3-homework">作业</button>
+</div>
+<!-- 第三章内容 -->
+<div id="c3-map" class="module-panel active">
+<div class="knowledge-graph">
+<div class="kg-title">第三章知识图谱：数绘校园</div>
+<ul class="tree-node" id="kg-tree-ch3"></ul>
+<div class="note-box" style="margin-top:15px;">
+<strong>本章核心</strong>：围绕校园真实场景，自主完成从数据采集、整理到图表选择、绘制的完整数据分析流程。
+</div>
+</div>
+</div>
+<div id="c3-ppt" class="module-panel"><div class="card-grid" id="ppt-list-ch3"></div></div>
+<div id="c3-code" class="module-panel"><div class="card-grid" id="code-list-ch3"></div></div>
+
+<!-- 第三章在线编程 -->
+<div id="c3-compiler" class="module-panel">
+  <div class="note-box" style="margin-bottom: 20px;">
+    <strong>💡 提示：</strong>这是内嵌的 Python 在线编程环境。你可以在左侧编写 Matplotlib 画图代码，点击上方的 <strong>运行 (Run)</strong> 按钮后，右侧会直接显示出图表！
+  </div>
+  <iframe src="https://trinket.io/embed/python3?runOption=run" 
+          width="100%" height="550" frameborder="0" marginwidth="0" marginheight="0" 
+          allowfullscreen style="border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+  </iframe>
+</div>
+
+<div id="c3-homework" class="module-panel">
+<div id="homework-container-ch3"></div>
+<!-- 第三章在线答题 -->
+<h3 style="margin: 40px 0 10px;">在线随堂练习（实践题和简答题请下载作业文档查看）</h3>
+<div class="quiz-card">
+  <div class="quiz-header">
+    <span id="quiz-progress-ch3">第 1 题</span>
+    <span class="quiz-badge">第三章自测</span>
+  </div>
+  <div id="quiz-body-ch3">
+    <div class="quiz-question" id="quiz-question-ch3">正在加载题目...</div>
+    <div class="quiz-options" id="quiz-options-ch3"></div>
+  </div>
+  <div class="quiz-feedback" id="quiz-feedback-ch3" style="display: none;">
+    <div class="feedback-status" id="feedback-status-ch3"></div>
+    <div class="feedback-answer">正确答案是：<strong id="correct-answer-text-ch3"></strong></div>
+    <div class="feedback-explanation" id="feedback-explanation-ch3"></div>
+  </div>
+  <div class="quiz-actions">
+    <button class="btn" id="quiz-next-btn-ch3" style="display: none;" onclick="handleNext('ch3')">下一题</button>
+  </div>
+</div>
+</div>
+</div>
+</main>
+
+<!-- PDF 大图预览模态框 -->
+<div id="pdfModal" class="pdf-modal">
+  <div class="pdf-modal-content">
+    <div class="pdf-modal-header">
+      <span id="pdfModalTitle">PDF预览</span>
+      <button class="close-btn" onclick="closePdfModal()">&times;</button>
+    </div>
+    <div class="pdf-modal-body">
+      <iframe id="pdfModalIframe" src=""></iframe>
+    </div>
+    <div class="pdf-modal-footer">
+      <a id="pdfModalDownload" class="btn" download>⬇️ 下载PDF</a>
+      <div class="pdf-note-in-modal" style="flex:1;">
+        <textarea id="pdfModalNotes" placeholder="在此做笔记..."></textarea>
+        <button class="btn btn-sm" onclick="saveModalNotes()">保存笔记</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer class="footer">
+<p>© 2025 数绘校园 —— Python 数据可视化校本课程 | 仅供教学使用</p>
+<p>主编：第二小组 | 编写人员：陈慕晴、黄逸姝、王艺晗、汪中凯、周婉莹</p>
+<p><a href="#">关于我们</a> | <a href="#">隐私说明</a> | 推荐浏览器：Chrome / Edge</p>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>
